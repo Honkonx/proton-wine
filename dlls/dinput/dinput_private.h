@@ -46,7 +46,6 @@ struct dinput
 
 extern const IDirectInput7AVtbl dinput7_a_vtbl;
 extern const IDirectInput8AVtbl dinput8_a_vtbl;
-extern HANDLE steam_overlay_event;
 
 extern void dinput_internal_addref( struct dinput *dinput );
 extern void dinput_internal_release( struct dinput *dinput );
@@ -55,8 +54,8 @@ extern HRESULT mouse_enum_device( DWORD type, DWORD flags, DIDEVICEINSTANCEW *in
 extern HRESULT mouse_create_device( struct dinput *dinput, const GUID *guid, IDirectInputDevice8W **out );
 extern HRESULT keyboard_enum_device( DWORD type, DWORD flags, DIDEVICEINSTANCEW *instance, DWORD version );
 extern HRESULT keyboard_create_device( struct dinput *dinput, const GUID *guid, IDirectInputDevice8W **out );
-extern HRESULT hid_joystick_enum_device( DWORD type, DWORD flags, DIDEVICEINSTANCEW *instance, DWORD version, int index );
-extern HRESULT hid_joystick_create_device( struct dinput *dinput, const GUID *guid, IDirectInputDevice8W **out );
+extern HRESULT micewine_joystick_enum_device( DWORD type, DWORD flags, DIDEVICEINSTANCEW *instance, DWORD version, int index );
+extern HRESULT micewine_joystick_create_device( struct dinput *dinput, const GUID *guid, IDirectInputDevice8W **out );
 
 struct DevicePlayer {
     GUID instance_guid;
