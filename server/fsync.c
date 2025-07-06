@@ -53,7 +53,7 @@
 
 int do_fsync(void)
 {
-#ifdef __linux__
+#if defined(__linux__) && !defined(__ANDROID__)
     static int do_fsync_cached = -1;
 
     if (do_fsync_cached == -1)
@@ -81,6 +81,16 @@ static uint32_t shm_idx_free_map_size; /* uint64_t word count */
 static uint32_t shm_idx_free_search_start_hint;
 
 #define BITS_IN_FREE_MAP_WORD (8 * sizeof(*shm_idx_free_map))
+
+#ifdef __ANDROID__ // Stub!
+static int shm_unlink(const char *name) {
+    return -1;
+}
+
+static int shm_open(const char *name, int oflag, mode_t mode) {
+    return -1;
+}
+#endif
 
 static void shm_cleanup(void)
 {

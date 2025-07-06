@@ -165,7 +165,7 @@ static inline int futex_wake( int *addr, int val )
 
 int do_fsync(void)
 {
-#ifdef __linux__
+#if defined(__linux__) && !defined(__ANDROID__)
     static int do_fsync_cached = -1;
 
     if (do_fsync_cached == -1)
@@ -219,6 +219,16 @@ C_ASSERT(sizeof(struct mutex) == 16);
 static char shm_name[29];
 static int shm_fd;
 static volatile void *shm_addrs[8192];
+
+#ifdef __ANDROID__ // Stub!
+static int shm_unlink(const char *name) {
+    return -1;
+}
+
+static int shm_open(const char *name, int oflag, mode_t mode) {
+    return -1;
+}
+#endif
 
 static void *get_shm( unsigned int idx )
 {
