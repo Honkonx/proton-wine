@@ -2651,6 +2651,87 @@ end:
     return hr;
 }
 
+#ifdef __ANDROID__
+static BOOL link_folder( HANDLE mgr, const UNICODE_STRING *path, const char *link )
+{
+    struct mountmgr_shell_folder *ioctl;
+    DWORD len = sizeof(*ioctl) + path->Length + strlen(link) + 1;
+    BOOL ret;
+
+    if (!(ioctl = malloc( len ))) return FALSE;
+    ioctl->create_backup = FALSE;
+    ioctl->folder_offset = sizeof(*ioctl);
+    ioctl->folder_size = path->Length;
+    memcpy( (char *)ioctl + ioctl->folder_offset, path->Buffer, ioctl->folder_size );
+    ioctl->symlink_offset = ioctl->folder_offset + ioctl->folder_size;
+    strcpy( (char *)ioctl + ioctl->symlink_offset, link );
+
+    ret = DeviceIoControl( mgr, IOCTL_MOUNTMGR_DEFINE_SHELL_FOLDER, ioctl, len, NULL, 0, NULL, NULL );
+    free( ioctl );
+    return ret;
+}
+
+static void create_link( const WCHAR *path, const char *default_name )
+{
+    UNICODE_STRING nt_name;
+    char *target = NULL;
+    HANDLE mgr;
+
+    if ((mgr = CreateFileW( MOUNTMGR_DOS_DEVICE_NAME, GENERIC_READ | GENERIC_WRITE,
+                            FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
+                            0, 0 )) == INVALID_HANDLE_VALUE)
+    {
+        FIXME( "failed to connect to mount manager\n" );
+        return;
+    }
+    nt_name.Buffer = NULL;
+    if (!RtlDosPathNameToNtPathName_U( path, &nt_name, NULL, NULL )) goto done;
+
+    link_folder( mgr, &nt_name, default_name );
+
+done:
+    RtlFreeUnicodeString( &nt_name );
+    free( target );
+    CloseHandle( mgr );
+}
+/******************************************************************************
+ * _SHCreateSymbolicLink  [Internal]
+ *
+ * Sets up a symbolic link for one of the special shell folders to point into
+ * the users home directory.
+ *
+ * PARAMS
+ *  nFolder [I] CSIDL identifying the folder.
+ */
+static void _SHCreateSymbolicLink(int nFolder, const WCHAR *path)
+{
+    DWORD folder = nFolder & CSIDL_FOLDER_MASK;
+
+    switch (folder) {
+        case CSIDL_PERSONAL:
+            create_link( path, "/storage/emulated/0/Documents" );
+            break;
+        case CSIDL_DESKTOPDIRECTORY:
+			create_link( path, "/storage/emulated/0/MiceWine" );
+            break;
+        case CSIDL_MYPICTURES:
+            create_link( path, "/storage/emulated/0/Pictures" );
+            break;
+        case CSIDL_MYVIDEO:
+            create_link( path, "/storage/emulated/0/Movies" );
+            break;
+        case CSIDL_MYMUSIC:
+            create_link( path, "/storage/emulated/0/Music" );
+            break;
+        case CSIDL_DOWNLOADS:
+            create_link( path, "/storage/emulated/0/Download" );
+            break;
+        case CSIDL_TEMPLATES:
+            break;
+    }
+}
+#endif
+
 /******************************************************************************
  * SHGetFolderPathW			[SHELL32.@]
  *
@@ -2838,6 +2919,12 @@ HRESULT WINAPI SHGetFolderPathAndSubDirW(
         hr = HRESULT_FROM_WIN32(ERROR_PATH_NOT_FOUND);
         goto end;
     }
+
+#ifdef __ANDROID__
+    /* create symbolic links rather than directories for specific
+     * user shell folders for MiceWine */
+    _SHCreateSymbolicLink(folder, szBuildPath);
+#endif
 
     /* create directory/directories */
     ret = SHCreateDirectoryExW(hwndOwner, szBuildPath, NULL);
