@@ -786,9 +786,6 @@
 /* Define to the soname of the libGL library. */
 #undef SONAME_LIBGL
 
-/* Define to the soname of the libGLESv2 library. */
-#undef SONAME_LIBGLESV2
-
 /* Define to the soname of the libgmp library. */
 #undef SONAME_LIBGMP
 
